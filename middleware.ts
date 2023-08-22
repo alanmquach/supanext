@@ -1,17 +1,17 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
-import { NextResponse } from 'next/server'
+import { withAuth } from "next-auth/middleware"
 
-import type { NextRequest } from 'next/server'
+// More on how NextAuth.js middleware works: https://next-auth.js.org/configuration/nextjs#middleware
+export default withAuth({
+  callbacks: {
+    authorized({ req, token }) {
+      // `/admin` requires admin role
+      if (req.nextUrl.pathname === "/admin") {
+        return token?.userRole === "admin"
+      }
+      // `/me` only requires the user to be logged in
+      return !!token
+    },
+  },
+})
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
-
-  // Create a Supabase client configured to use cookies
-  const supabase = createMiddlewareClient({ req, res })
-
-  // Refresh session if expired - required for Server Components
-  // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-session-with-middleware
-  await supabase.auth.getSession()
-
-  return res
-}
+export const config = { matcher: ["/admin", "/me"] }
